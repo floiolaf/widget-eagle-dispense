@@ -263,8 +263,8 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
          * a solder mask over the board.
          */
         drawdispense: function() {
-            var that = this;
             // draw dispense drops
+            this.renderDispenserDrops(this.eagleWidget);
         },
         /**
          * We subscribe to the main Eagle Widget's addGcode publish signal
@@ -316,11 +316,10 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
         onBeforeRender : function(self){
             console.log("Get onBeforeRender:", self);
             // action to make drops
-            this.renderDispenserDrops(self);
 
             if( this.isTabShowing ){
                 var that = this;
-                console.log("Tab are showing, regenerate DSP holder", this.isTabShowing);
+                console.log("Tab are showing, regenerate DSP drops", this.isTabShowing);
                 setTimeout(function(){
                     that.mySceneGroup = null;
                     that.onTabShown();
@@ -388,7 +387,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                            var axis = new THREE.Vector3(0, 0, 1);
                            PARENT.rotateAroundObjectAxis(group, axis, r);
                         }
-                        PARENT.sceneAdd(group);
+                        that.sceneAdd(group);
                    }  else {
                      // calculate area and mark drop with traffic colors
                      var ar_smd = s.dx * s.dy;
@@ -402,7 +401,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                         color = that.colorsDrop[2];
                      // draw a drop (cone) on this position
                      var drop = PARENT.drawSphere(vector.x, vector.y, (that.cannulaDiameter/2), color);
-                     PARENT.sceneAdd(drop);
+                     that.sceneAdd(drop);
                      that.renderedDrops.push(drop);
                   }
                });
@@ -581,10 +580,6 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                 });
             }
             else {
-                if(this.options['packagesTrays'] === undefined){
-                    this.options.packagesTrays   = this.packagesTrays;
-                    this.options.packagesPockets = this.packagesPockets;
-                }
                 console.log('Options', this.options );
                 for(var key in this.options){
                     // read from options, set and trigger change
