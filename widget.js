@@ -179,8 +179,8 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
          */
         init: function(eagleWidget) {
             
-            if(eagleWidget === undefined)
-                return;
+            // if(eagleWidget === undefined)
+            //    return;
                         
             this.eagleWidget = eagleWidget;
             console.log("I am being initted. eagleWidget:", this.eagleWidget);
