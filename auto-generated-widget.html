@@ -4,7 +4,7 @@
 <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 
-    <title>Widget Add-On / Pick and Place</title>
+    <title>Widget Add-On / Dispenser</title>
 
     <!-- ChiliPeppr is based on bootstrap CSS. -->
     <link rel="stylesheet" type="text/css" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
@@ -41,17 +41,17 @@
 
 // ChiliPeppr Widget/Element Javascript
 
-cprequire_test(["inline:com-chilipeppr-widget-eagle-pickandplace"], function(pickandplace) {
+cprequire_test(["inline:com-chilipeppr-widget-eagle-dispense"], function(dispense) {
 
     // Test this element. This code is auto-removed by the chilipeppr.load()
     // when using this widget in production. So use the cpquire_test to do things
     // you only want to have happen during testing, like loading other widgets or
     // doing unit tests. Don't remove end_test at the end or auto-remove will fail.
 
-    console.log("test running of " + pickandplace.id);
+    console.log("test running of " + dispense.id);
 
     // adjust my title
-    $('title').html(pickandplace.name);
+    $('title').html(dispense.name);
     
     $('body').prepend(
         '<div id="com-chilipeppr-flash"></div>' +
@@ -97,7 +97,7 @@ cprequire_test(["inline:com-chilipeppr-widget-eagle-pickandplace"], function(pic
                             eagleWidget.init(true);
                             
                             // now init our own widget
-                            pickandplace.init(eagleWidget);
+                            dispense.init(eagleWidget);
                         }
                     );
                     
@@ -134,97 +134,36 @@ cprequire_test(["inline:com-chilipeppr-widget-eagle-pickandplace"], function(pic
 } /*end_test*/ );
 
 // This is the main definition of your widget. Give it a unique name.
-cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready", /* other dependencies here */ ], function() {
+cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* other dependencies here */ ], function() {
     return {
         /**
          * The ID of the widget. You must define this and make it unique.
          */
-        id: "com-chilipeppr-widget-eagle-pickandplace", // Make the id the same as the cpdefine id
-        name: "Widget Add-On / Pick and Place", // The descriptive name of your widget.
-        desc: "This add-on widget is a tab for the Eagle BRD widget that helps you generate gcode for pick and place smd components to a pcb.", // A description of what your widget does
-        url: "http://raw.githubusercontent.com/xpix/widget-eagle-pickandplace/master/auto-generated-widget.html", // The final URL of the working widget as a single HTML file with CSS and Javascript inlined. You can let runme.js auto fill this if you are using Cloud9.
-        fiddleurl: "http://ide.c9.io/xpix/widget-eagle-pickandplace", // The edit URL. This can be auto-filled by runme.js in Cloud9 if you'd like, or just define it on your own to help people know where they can edit/fork your widget
-        githuburl: "http://github.com/xpix/widget-eagle-pickandplace", // The backing github repo
-        testurl: "http://widget-eagle-pickandplace-xpix.c9users.io/widget.html", // The standalone working widget so can view it working by itself
+        id: "com-chilipeppr-widget-eagle-dispense", // Make the id the same as the cpdefine id
+        name: "Widget Add-On / Dispenser", // The descriptive name of your widget.
+        desc: "This add-on widget is a tab for the Eagle BRD widget that helps you generate gcode for dispense solderpaste drop's to a pcb.", // A description of what your widget does
+        url: "http://raw.githubusercontent.com/xpix/widget-eagle-dispense/master/auto-generated-widget.html", // The final URL of the working widget as a single HTML file with CSS and Javascript inlined. You can let runme.js auto fill this if you are using Cloud9.
+        fiddleurl: "http://ide.c9.io/xpix/widget-eagle-dispense", // The edit URL. This can be auto-filled by runme.js in Cloud9 if you'd like, or just define it on your own to help people know where they can edit/fork your widget
+        githuburl: "http://github.com/xpix/widget-eagle-dispense", // The backing github repo
+        testurl: "http://widget-eagle-dispense-xpix.c9users.io/widget.html", // The standalone working widget so can view it working by itself
         /**
-         * PICK AND PLACE VARIABLES.
+         * Dispenser VARIABLES.
          */
-        /**
-         * BETA: Save smd 3d models from https://eagleup.wordpress.com/ in 
-         * sketchup 3d warehouse and use there 3d model viewer at popup for trays
-         * URL Database to my 3dwarehouse gallery, later we save this as json file and load this dynamic
-         * some examples
-         */
-        packages3D:{
-            'C0603': 'https://3dwarehouse.sketchup.com/embed.html?mid=ub1b01b5b-2631-43f4-88f0-d2ae7a9ef7ae',
-            'C0805': 'https://3dwarehouse.sketchup.com/embed.html?mid=ub6fa6b56-cded-4b48-b61b-19b84cfdcf84',
-            'R0603': 'https://3dwarehouse.sketchup.com/embed.html?mid=u1ac1438a-16ce-491b-a128-d039d96cbb5f',
-            'R0805': 'https://3dwarehouse.sketchup.com/embed.html?mid=ua6fc0469-d44e-43eb-87db-0f9f119f8a62'
-        },
-        pnpholders: {
-            'PNP Holder V0.1': 'pnp_holder_v0.1'
-        },
-        rotateAxis: 'Y',      // Rotation axis on the second controller
-        nozzleDiameter: 1,    // noozle diameter in mm
-        safetyHeight: 5,        // safety height for rapid moves
-        // this define the trays, this will later load via ajax 
-        // for every tray holder but for the first time we define here the structure
-        holderCoordinates: {
-            size: {dx: 260, dy:130, dz: 10},
-            zero: {x: 6, y: 55},   // calculated from center of platform
-            pcbThick: 0.6,          // pcb thick minus deep of pcb pocket in mm i.e.: (1.6mm - 1mm)
-            sortAxis: 'x',          // Axis for calculate ways
-            pcbholder: {dx: 120, dy: 80, deep: -1}, // dimensions of pcb holder
-            structure: {            // http://www.token.com.tw/chip-resistor/smd-resistor1.htm
-               feedrate: 100,                               // slow feedrate in mm/min
-               tapeThick: -1,                               // how thick are the tape
-               holeDiameter: 1.5,                           // check parameter "D" in website
-               holeBorderDistance: 1.75,                    // check parameter "E" in website
-               holeDistance: 4.00,                          // check parameter "Po" in website
-               holeComponentDistance:  {x: 3.50, y:2.00 },  // check parameter "F and P2" in website
-            },
-            trays: {
-                // Trays are numbered and pockets has letters
-                // x and y coordinates are realtive to zero point of PNP Holder
-                tray_1: { name: 'Tray Nr. 1',   width: 8, x: -106, y: 90 },
-                tray_2: { name: 'Tray Nr. 2',   width: 8, x: -96,  y: 90 },
-                tray_3: { name: 'Tray Nr. 3',   width: 8, x: -86,  y: 90 },
-                tray_4: { name: 'Tray Nr. 4',   width: 8, x: -76,  y: 90 },
-                tray_5: { name: 'Tray Nr. 5',   width: 8, x: -66,  y: 90 },
-                tray_6: { name: 'Tray Nr. 6',   width: 8, x: -56,  y: 90 },
-                tray_7: { name: 'Tray Nr. 7',   width: 8, x: -46,  y: 90 },
-                tray_8: { name: 'Tray Nr. 8',   width: 8, x: -36,  y: 90 },
-            },
-            pockets: {
-                Pocket_A: { name: 'Pocket A',   width: 15, x: -23, y: 21 },
-                Pocket_B: { name: 'Pocket B',   width: 15, x: -23, y: 52 },
-                Pocket_C: { name: 'Pocket C',   width: 15, x: -23, y: 71 },
-                Pocket_D: { name: 'Pocket D',   width: 15, x: -23, y: 110 },
-                Pocket_E: { name: 'Pocket E',   width: 15, x: -4,  y: 110 },
-                Pocket_F: { name: 'Pocket F',   width: 15, x: -4,  y: 89 },
-                Pocket_G: { name: 'Pocket G',   width: 15, x: 15,  y: 89 },
-                Pocket_H: { name: 'Pocket G',   width: 15, x: 34,  y: 89 },
-                Pocket_I: { name: 'Pocket H',   width: 15, x: 53,  y: 89 },
-                Pocket_K: { name: 'Pocket I',   width: 15, x: 72,  y: 89 },
-                Pocket_L: { name: 'Pocket K',   width: 15, x: 91,  y: 89 },
-                Pocket_M: { name: 'Pocket L',   width: 15, x: 110, y: 89 },
-            },
-        },
-        // buffer for all founded eagle components
-        components: {
-            forTrays: {},
-            forPockets: {},
-            ignored: {},
-        },
-        // http://www.radio-electronics.com/info/data/resistor/smd_resistor/smd_resistor.php
-        packagesTrays: [
-            '1206', '1008', '0805', 
-            '0603', '0402', 'SOT'
-        ],
-        packagesPockets: [
-            'SOIC', 'SOP', 'QFP', 
-            'BGA', 'PLCC', 'SOD', 'DIL.+?SMD'
-        ],
+        cannulaDiameter: 1,
+        startreleaseoffset: 1.0,
+        DispenserXoffset: 0.0,
+        DispenserYoffset: 0.0,
+        dispenserAxis: 'X',
+        gcodeOrderNumber: 20,
+        renderedDrops: [],
+        colorsDrop: [0x298A08, 0x868A08, 0x8A0808] , // green, yellow, red
+        options: {
+           cannulaDiameter: 1,
+           startreleaseoffset: 1.0,
+           DispenserXoffset: 0.0,
+           DispenserYoffset: 0.0,
+           dispenserAxis: 'X'
+        }, // holds base options before loading from localStorage
         /**
          * Define pubsub signals below. These are basically ChiliPeppr's event system.
          * ChiliPeppr uses amplify.js's pubsub system so please refer to docs at
@@ -304,7 +243,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
             var tabHdrEl = $('<li xclass="active">' +
                 '<a href="#' + this.id + 
                 '" role="tab" data-toggle="tab">' +
-                'Pick&Place</a></li>'
+                'Dispense</a></li>'
             );
             $('#com-chilipeppr-widget-eagle .panel-body .nav-tabs').append(tabHdrEl);
             
@@ -315,9 +254,9 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
             
             var that = this;
             $('#com-chilipeppr-widget-eagle a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-                console.log("PNP tab shown. e:", $(e.target).attr("href"));
+                console.log("DSP tab shown. e:", $(e.target).attr("href"));
                 var target = $(e.target).attr("href"); // activated tab
-                if (target.match(/#com-chilipeppr-widget-eagle-pickandplace/)) {
+                if (target.match(/#com-chilipeppr-widget-eagle-dispense/)) {
                     // we just got shown
                     that.onTabShown();
                 } else {
@@ -327,9 +266,9 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
         },
         isTabShowing: false,
         /**
-         * Holds the pnp 3d object that we show in the 3D viewer.
+         * Holds the DSP 3d object that we show in the 3D viewer.
          */
-        pnp3d: null,
+        dispense3d: null,
         /**
          * widget to know if startet or not.
          */
@@ -346,242 +285,24 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
                     child.visible = true; 
                 });
             } else {
-                this.drawpickandplace();
+                this.drawdispense();
             }
         },
         /**
          * When the user clicks a different tab and this one gets hidden.
          */
         onTabHide: function() {
-            console.log('PNP tab hide');
+            console.log('DSP tab hide');
             this.isTabShowing = false;
-            this.sceneRemove(this.pnp3d);
-        },
-        /**
-         * When the user move mouse over pocket or tray then display additional info's.
-         */
-        onMouseOverCallback: function(event, object) {
-            var tray = object.object;
-
-            tray.material.opacityBackup = tray.material.opacity;
-            tray.material.opacity = 1;            
-
-            // Set infos ...
-            console.log('PNP onMouseOverCallback', object);
-            var cmp = tray.userData.component || null;
-            if(cmp == null) return;
-
-            var names = Object.keys(this.getObjects(tray.userData.component));
-            if(cmp)
-                var firstElement = this.hash2array(cmp)[0];
-            
-            this.infoArea.find('.info-title').text(tray.userData.pocketname);
-            this.infoArea.find('.info-value').text(firstElement.value || firstElement.name);
-            this.infoArea.find('.info-package').text(firstElement.pkg);
-            this.infoArea.find('.info-names').text(names.join(','));
-
-            this.infoArea.removeClass('hidden');
-            this.infoArea.css('left', tray.userData.x + "px").css('top', tray.userData.y + "px");
-            this.eagleWidget.infoPlugin = this.infoArea; // register for mouseoverout
+            this.sceneRemove(this.dispense3d);
         },
         /**
          * Iterate through the Eagle BRD dimensions XY coordinates and draw
          * a solder mask over the board.
          */
-        drawpickandplace: function() {
+        drawdispense: function() {
             var that = this;
-
-            var platform = this.drawPlatform();
-            this.sceneAdd( platform );
-            var helper = new THREE.EdgesHelper( platform, 0xffffff );
-            helper.material.linewidth = 1;
-            this.sceneAdd( helper );
-
-
-            var trays = this.drawTraysandPockets();
-            trays.forEach(function(tray){
-                that.sceneAdd( tray );
-            });
-
-            that.sceneAdd(
-                this.drawPCBHolder()
-            );
-        },
-        drawPCBHolder: function(){
-            var material = new THREE.MeshPhongMaterial( {
-                color: 0xff9999, 
-                shading: THREE.FlatShading,
-                polygonOffset: true,
-                polygonOffsetFactor: 1, // positive value pushes polygon further away
-                polygonOffsetUnits: 1
-            } );
-            var geometry = new THREE.BoxGeometry( 
-                this.holderCoordinates.pcbholder.dx, 
-                this.holderCoordinates.pcbholder.dy,
-                Math.abs( this.holderCoordinates.pcbholder.deep ) 
-            );
-            var pcbholder = new THREE.Mesh( geometry, material );
-            pcbholder.position.set(
-                this.holderCoordinates.pcbholder.dx/2,
-                this.holderCoordinates.pcbholder.dy/2,
-                this.holderCoordinates.pcbholder.deep);
-            return pcbholder;
-        },
-        drawTraysandPockets: function(){
-            var trays = [];
-
-            var materialDefaults = {
-                color: 0xaaaaaa, 
-                transparent: true,
-                opacity: 0.5,
-                shading: THREE.FlatShading,
-                polygonOffset: true,
-                polygonOffsetFactor: 1, // positive value pushes polygon further away
-                polygonOffsetUnits: 1
-            }; 
-
-            for (var trayname in this.holderCoordinates.trays) {
-                var componentName = null;
-                var material = new THREE.MeshPhongMaterial( materialDefaults  );
-
-                var geometry = new THREE.BoxGeometry( 
-                    this.holderCoordinates.trays[trayname].width, 
-                    this.holderCoordinates.size.dy,
-                    Math.abs( this.holderCoordinates.structure.tapeThick ) 
-                );
-                var tape = new THREE.Mesh( geometry, material );
-
-                tape.position.set( 
-                    this.holderCoordinates.trays[trayname].x,
-                    this.holderCoordinates.zero.y,
-                    1
-                );
-                
-                // check if this tray set
-                var text = this.holderCoordinates.trays[trayname].name;
-                var t = this.searchObj(this.components.forTrays, 'TRAY', trayname);
-                if( t != null ){
-                    tape.material.color.setHex( 0xeeffee );
-                    componentName = t[0];
-                    text = ' [ ' + t[0] + ' ]';
-                }
-                
-                // Display tray txt
-                var tapeTxt = this.obj3dmeta.widget.makeText({
-                    x: 1,
-                    y: 0-(this.holderCoordinates.size.dy/2)+10,
-                    z: 1,
-                    text: text,
-                    color: '#000000',
-                    opacity: 0.6,
-                    size: 2
-                });
-                this.rotateObject(tapeTxt, 90);
-                tape.add(tapeTxt);
-                if(componentName != null)
-                    tape.userData.component = this.components.forTrays[componentName];
-                tape.userData.pocketname = this.holderCoordinates.trays[trayname].name;
-                trays.push(tape);
-            }
-
-            for (var pocketname in this.holderCoordinates.pockets) {
-                var componentName = null;
-                materialDefaults.color = 0xaaaaff;
-                var material = new THREE.MeshPhongMaterial( materialDefaults );
-                var geometry = new THREE.BoxGeometry( 
-                    this.holderCoordinates.pockets[pocketname].width, 
-                    this.holderCoordinates.pockets[pocketname].width, 
-                    Math.abs( this.holderCoordinates.structure.tapeThick ) 
-                );
-                var pocket = new THREE.Mesh( geometry, material );
-                pocket.position.set( 
-                    this.holderCoordinates.pockets[pocketname].x + this.holderCoordinates.zero.x,
-                    this.holderCoordinates.pockets[pocketname].y,
-                    1
-                );
-                // check if this tray set
-                var text = this.holderCoordinates.pockets[pocketname].name;
-                var t = this.searchObj(this.components.forPockets, 'POCKET', pocketname);
-                if( t != null ){
-                    pocket.material.color.setHex( 0xaaffaa );
-                    componentName = t[0];
-                    text = '[' + t[0] + ']';
-                }
-
-                // Display pocket txt
-                var pocketTxt = this.obj3dmeta.widget.makeText({
-                    x: 0-(this.holderCoordinates.pockets[pocketname].width/2)+1,
-                    y: 1,
-                    z: 1,
-                    text: text,
-                    color: '#000000',
-                    opacity: 0.6,
-                    size: 2
-                });
-                pocket.add(pocketTxt);
-                if(componentName != null)
-                    pocket.userData.component = this.components.forPockets[componentName];
-                pocket.userData.pocketname = this.holderCoordinates.pockets[pocketname].name;
-
-                trays.push(pocket);
-            }
-
-            var that = this;
-            // add to onMouseOver event to every tray or pocket to display 
-            // a window with additional informations 
-            trays.forEach(function(tray) {
-                tray.userData.onMouseOverCallback = function(event, object){
-                    if(object.onMouse == true)
-                        return;
-                    object.onMouse = true;
-                    // console.log('PNP get onMouseOverCallback', event, object);
-                    that.onMouseOverCallback(event, object);
-                    object.onMouse = false;
-                };
-                that.eagleWidget.intersectObjects.push( tray );
-            });
-
-            return trays;
-        },
-        drawPlatform: function(){
-            // Build box as platform
-            /*
-            var geometry = new THREE.BoxGeometry( 
-                this.holderCoordinates.size.dx, 
-                this.holderCoordinates.size.dy, 
-                this.holderCoordinates.size.dz 
-            );
-            var material = new THREE.MeshBasicMaterial( { 
-                     color: '#666666',
-                     wireframe : false,
-                     transparent: true,
-                     opacity: 0.1
-            } );
-            */
-            var platform = this.drawBox(this.holderCoordinates.size.dx, this.holderCoordinates.size.dy);
-            platform.position.set( 
-                0-((this.holderCoordinates.size.dx/2) - this.holderCoordinates.zero.x),
-                0-((this.holderCoordinates.size.dy/2) - this.holderCoordinates.zero.y),
-                0
-            );
-
-            return platform;
-        },
-        drawBox: function(blength, bwidth) {
-           var material = new THREE.LineBasicMaterial({
-              color: 0x777777
-           });
-        
-           var geometry = new THREE.Geometry();
-           geometry.vertices.push(
-              new THREE.Vector3( 0, 0, 0 ),
-              new THREE.Vector3( 0, bwidth, 0 ),
-              new THREE.Vector3( blength, bwidth, 0 ),
-              new THREE.Vector3( blength, 0, 0 ),
-              new THREE.Vector3( 0, 0, 0 )
-           );
-        
-           return new THREE.Line( geometry, material );
+            // draw dispense drops
         },
         /**
          * We subscribe to the main Eagle Widget's addGcode publish signal
@@ -607,24 +328,24 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
         onAddGcode : function(addGcodeCallback, gcodeParts, eagleWidget, helpDesc){
             console.log("Got onAddGcode:", arguments);
 
-            // if PNP widget startet (user activate the PNP Tab)
+            // if DSP widget startet (user activate the DSP Tab)
             if(! this.started())
                 return;
 
-            if( $('#' + this.id).find('.onlypnpgcode').is(':checked') ){
-                // remove all milling code for testing or to choose only pnp
-                for(var i = 200;i<=1499;i++){
+            if( $('#' + this.id).find('.onlydispensegcode').is(':checked') ){
+                // remove all milling code for testing or to choose only DSP
+                for(var i = 200;i<=1299;i++){
                     gcodeParts[i] = undefined;
                     
                 }
             }
 
-            // if user don't want produce pnp gcode
-            if($('#' + this.id).find('.activepnpgcode').is(':checked') ){
-                addGcodeCallback(1500, this.exportGcodepickandplace(eagleWidget) );
+            // if user don't want produce DSP gcode
+            if($('#' + this.id).find('.activedispensegcode').is(':checked') ){
+                addGcodeCallback(1300, this.exportGcodeDispenser(eagleWidget) );
             }
             else {
-                gcodeParts[1500] = undefined;
+                gcodeParts[1300] = undefined;
             }
         },
         /**
@@ -632,409 +353,155 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
          */
         onBeforeRender : function(self){
             console.log("Get onBeforeRender:", self);
-            this.registerEagleComponents(self);
-            this.sortTrayComponents();
-            this.sortPocketComponents();
-            this.setupComponentsTable();
+            // action to make drops
+            this.renderDispenserDrops(self);
 
             if( this.isTabShowing ){
                 var that = this;
-                console.log("Tab are showing, regenerate pnp holder", this.isTabShowing);
+                console.log("Tab are showing, regenerate DSP holder", this.isTabShowing);
                 setTimeout(function(){
                     that.mySceneGroup = null;
                     that.onTabShown();
                 }, 2000);
             }
         },
-        /**
-         * Display table with all components sortet to the trays and pockets.
-         */
-        setupComponentsTable: function(){
-            console.group("setupComponentsTable");
-            var tableRows = [], 
-                that = this;
-
-            var buildRow = function(elemValue, ignored){
-               var data = that.components.forTrays[ elemValue ] 
-                            || that.components.forPockets[ elemValue ]
-                            || that.components.ignored[ elemValue ];
-               var names = [], 
-                   packages = '',
-                   rotation = [];
-               for(var value in data){
-                  names.push(data[value].name);
-                  if($.type(data[value]) == 'object'){
-                    packages = data[value].pkg;
-                    rotation.push(data[value].rot);
-                  }
-               }
-               // collect data and display in a table row
-               if($.type(data) == 'object')
-                   tableRows.push([
-                      (Object.keys(data).length -1),
-                      elemValue,
-                      packages,
-                      rotation.join(', '),
-                      names.join(', '),
-                      (ignored 
-                        ? '<b>Ignored</b>' 
-                        : '<select id="trays_' + elemValue.replace(/\./ig, '_') + '" class="pnp-select" />')
-                   ]);  
-            }
-
-            // setup table content
-            for (var elemValue in this.components.forTrays) {
-                buildRow(elemValue);
-            }
-            for (var elemValue in this.components.forPockets ) {
-                buildRow(elemValue);
-            }
-            for (var elemValue in this.components.ignored ) {
-                buildRow(elemValue, 'ignored');
-            }
-            this.table('#pnp-component-list', tableRows);
-
-            // Fill selectboxes
-            var output = function(entry){ 
-               return entry.name + ' (' + entry.width + 'mm)';
-            };
-            var buildSelectbox = function(elemValue, type){
-               var d = that.components.forTrays[ elemValue ]
-                        || that.components.forPockets[ elemValue ];
-               if($.type(d) == 'object')
-                   that.selectbox(
-                      '#trays_' + elemValue.replace(/\./ig, '_'), 
-                      that.holderCoordinates[ type ],
-                      output, 
-                      (type == 'trays' ? d.TRAY : d.POCKET) 
-                   );
-            }
-            for (var elemValue in this.components.forTrays) {
-                buildSelectbox(elemValue, 'trays');
-            }
-            for (var elemValue in this.components.forPockets) {
-                buildSelectbox(elemValue, 'pockets');
-            }
-
-            console.groupEnd();
+        setCanullaDiameter: function(evt){
+            console.log("setCanullaDiameter. evt.data:", evt.data, "evt:", evt);
+            var diameter = $(evt.currentTarget).attr('diameter');
+            console.log("setCanullaDiameter. diameter:", diameter);
+            $('#com-chilipeppr-widget-eagle-dispense').find('.cannulaDiameter').val(diameter);
+            $('#com-chilipeppr-widget-eagle-dispense').find('.cannulaDiameter').trigger('change');
         },
-        /**
-         * Read all eagle components and decide for try or pocket or ignore.
-         */
-        registerEagleComponents: function(self){
-            console.group("registerEagleComponents");
+        renderDispenserDrops:function(PARENT){
+            var that = this;
+            console.log('renderDispenserDrops: ', PARENT);
+
+            if(! $('#com-chilipeppr-widget-eagle-dispense .dispenser-active').is(':checked'))
+               return;
             
-            // refresh, remove old entrys
-            this.components['forTrays'] = {};
-            this.components['forPockets'] = {};
-            this.components['ignored'] = {};
-            
-            // Analyze the eagle elements and save this in a local buffer 
-            // sorted by trays or pockets and his values or names      
-            for (var elemKey in self.eagle.elements) {
-                var elem = self.eagle.elements[elemKey];
-                var pkg = self.eagle.packagesByName[elem.pkg];
-                this.packagesByName = self.eagle.packagesByName;
-                console.log("working on element:", elem, pkg);
+            // get all smd pads,
+            var clippers = PARENT.clipperBySignalKey;
+            console.group("drawDispenserDrops");
+            for ( var keyname in clippers ){
+               clippers[keyname].smds.forEach(function(smd){
+                  // get absolute position'
+                  var vector = new THREE.Vector3();
+                  vector.setFromMatrixPosition( smd.threeObj.matrixWorld );
 
-                // sort all components to tray or pockets sortet via value
-                var that = this,
-                    found = 0;
-                var key = elem.value || elem.name;
-                key = key.replace(/\./ig, '-');
+                  var diameter = that.cannulaDiameter+(that.cannulaDiameter/2);
+                  var radius = diameter / 2;
+                  var ar_drop = Math.PI * (radius*radius);
+                  
+                   // Calculate bigger smd pads as canulla diameter*2
+                   // +-----+
+                   // | O O |
+                   // | O O |
+                   // +-----+
+                   var s = smd.smd;
+                   var sgroup = smd.threeObjSmdGroup;
+                   console.log("SMD Pad: ", smd);
+                   if(s.dx >= diameter*2 || s.dy >= diameter*2){
+                        var steps_x = Math.round(s.dx/diameter);
+                        var steps_y = Math.round(s.dy/diameter);
+                        var space_x = (s.dx-(steps_x * diameter)) / steps_x;
+                        var space_y = (s.dy-(steps_y * diameter)) / steps_y;
 
-                // try to find in packagesTray
-                var packagesTrays = this.options.packagesTrays || this.packagesTrays;
-                packagesTrays.forEach(function(type){
-                    var re = new RegExp(type, 'gi');
-                    if(pkg.name.match(re)){
-                        found++
-                        if(that.components['forTrays'][key] === undefined)
-                           that.components['forTrays'][key] = {};
-                        that.components['forTrays'][key][elem.name] = elem;
-                    }
-                });
+                        var startx = vector.x-(s.dx/2) + radius + (space_x/2);
+                        var starty = vector.y-(s.dy/2) + radius + (space_y/2);
 
-                // try to find in packagesPockets
-                var packagesPockets = this.options.packagesPockets || this.packagesPockets;
-                if(found == 0)
-                    packagesPockets.forEach(function(type){
-                        var re = new RegExp(type, 'gi');
-                        if(pkg.name.match(re)){
-                            found++
-                            if(that.components['forPockets'][key] === undefined)
-                               that.components['forPockets'][key] = {};
-                            that.components['forPockets'][key][elem.name] = elem;
+                        var group = new THREE.Object3D();//create an empty container
+                        for(var iy=1; iy <= steps_y; iy++){
+                           for(var ix=1; ix <= steps_x;ix++){
+                              var drop = PARENT.drawSphere(startx, starty, (that.cannulaDiameter/2), that.colorsDrop[0]);
+                              group.add( drop );//add a mesh with geometry to it
+                              startx += diameter + space_x;
+                           }
+                           startx = vector.x-(s.dx/2) + radius + (space_x/2);
+                           starty += diameter + space_y;
                         }
-                    });
-                if(found == 0){
-                    if(that.components['ignored'][key] === undefined)
-                       that.components['ignored'][key] = {};
-                    that.components['ignored'][key][elem.name] = elem;
-                }
-
+                        that.renderedDrops.push(group);
+                        if (s.rot != null) {
+                           var rot = parseInt(s.rot.replace(/\D+/,''));
+                           var r = (Math.PI / 180) * rot;
+                           var axis = new THREE.Vector3(0, 0, 1);
+                           PARENT.rotateAroundObjectAxis(group, axis, r);
+                        }
+                        PARENT.sceneAdd(group);
+                   }  else {
+                     // calculate area and mark drop with traffic colors
+                     var ar_smd = s.dx * s.dy;
+                     var percent = percent = ar_smd / (ar_drop/100); // area from drop greather then smd pad
+                     if(ar_smd > ar_drop)                            // area from smd pad greather then drop
+                        percent = ar_drop / (ar_smd/100);
+                     var color = that.colorsDrop[0];
+                     if(percent < 80)
+                        color = that.colorsDrop[1];
+                     if(percent < 50)
+                        color = that.colorsDrop[2];
+                     // draw a drop (cone) on this position
+                     var drop = PARENT.drawSphere(vector.x, vector.y, (that.cannulaDiameter/2), color);
+                     PARENT.sceneAdd(drop);
+                     that.renderedDrops.push(drop);
+                  }
+               });
             }
-            console.groupEnd();
+            console.groupEnd("drawDispenserDrops");
+
+            // finish
         },
-        /**
-         * Sort all components to trays for the shortest move between tray and component place.
-         */
-        sortTrayComponents: function(){
-            console.group("sortTrayComponents");
-            // calculate distace and sort components to tray numbers
-            var sorthash = [];
-            var sortaxis = this.components.forTrays.sortAxis; // TODO: use this sortaxis
-            for (var elemValue in this.components.forTrays) {
-                var sum = 0, i = 0;
-                for (var elemKey in this.components.forTrays[elemValue]) {
-                    sum += this.components.forTrays[elemValue][elemKey].x;
-                }
-                sorthash.push( {k: elemValue, v: (sum / i).toFixed(4)} );
-            }
-            // sort from min to max
-            sorthash.sort(function (a, b) {
-                return ( a.v - b.v );
-            });
-            console.log('PNP sorthash', sorthash);
-
-            var trays = [];
-            $.each(this.holderCoordinates.trays, function(key, value) {
-               // make all trays to width = 8mm ... done
-               trays.push( {k: key, v: value.x} ); // try to get sortAxis
-            });
-            trays.sort(function (a, b) {
-                return ( b.v - a.v );
-            });
-            console.log('PNP trayssort', trays);
-
-            // set element to tray
-            var i = 0, that = this;
-            sorthash.forEach(function(entry){
-                entry.t = trays[i++].k;                      
-                that.components.forTrays[entry.k]['TRAY'] = entry.t;
-            });
-            console.log('PNP Object: ', this);
-
-            console.groupEnd();
-
-            return sorthash;
-        },
-        /**
-         * Sort all components to pockets for the shortest move between pocket and component place.
-         */
-        sortPocketComponents: function(){
-            console.group("sortPocketComponents");
-            // calculate distace and sort components to tray numbers
-            var sorthash = [];
-            for (var elemValue in this.components.forPockets ) {
-                var sum = 0, i = 0;
-                for (var elemKey in this.components.forPockets[elemValue]) {
-                    sum += this.components.forPockets[elemValue][elemKey].x + this.components.forPockets[elemValue][elemKey].y;
-                }
-                sorthash.push( {k: elemValue, v: (sum / i).toFixed(4)} );
-            }
-            // sort from min to max
-            sorthash.sort(function (a, b) {
-                return ( a.v - b.v );
-            });
-            console.log('PNP sorthash', sorthash);
-
-            var pockets = [];
-            $.each(this.holderCoordinates.pockets, function(key, value) {
-               // make all trays to width = 8mm ... done
-               pockets.push( {k: key, v: (value.x + value.y)} ); // try to get sortAxis
-            });
-            pockets.sort(function (a, b) {
-                return ( a.v - b.v );
-            });
-            console.log('PNP pocketssort', pockets);
-
-            // set element to tray
-            var i = 0, that = this;
-            sorthash.forEach(function(entry){
-                entry.t = pockets[i++].k;                      
-                that.components.forPockets[entry.k]['POCKET'] = entry.t;
-            });
-            console.log('PNP Object: ', this);
-
-            console.groupEnd();
-
-            return sorthash;
-        },
-        /** 
-         * empty and fill html select box 
-        */
-        selectbox: function(id, hash, outcallback, selected){
-            $(id).find('option').remove().end();
-            if(selected !== undefined)
-               $(id).append(
-                  $('<option></option>').val('').html('not selected')
-               );
-            $.each(hash, function(key, value) {
-                $(id).append(
-                    $('<option></option>').val(key).html(( outcallback ? outcallback(value) : key))
-                );
-            });
-            if(selected !== undefined)
-               $(id).val(selected);
-        },
-        /** 
-         * empty and fill html table 
-        */
-        table: function(id, array){
-            $(id).find("tr:gt(0)").remove();
-            $.each(array, function(idx, entry) {
-                var content = '<tr>';
-                $.each(entry, function(idx, value) {
-                    content += '<td>' + value + '</td>';  
-                });
-                content += '</tr>';
-                $(id + ' tr:last').after(content);        
-            });
-        },
-        /**
-         * Generate the gcode for pnp
-         */
-        exportGcodepickandplace: function(eagleWidget) {
-            var g = "";
-            g += "(------ Pick and Place Moves -------)\n";
-            g += "( Each smd component has a pick&place strategy )\n";
-            g += "( this use a vacuum suction solenoid and stepper to rotate sm in correct position )\n";
-            g += "( use a special PnP Holder )\n";
-
-            /* 
-            Strategy to get a component and place it
-            iterate over components.forTrays
-            create follow plan:
-
-               1. move to zero point of tray
-               2. call this.tapeStrategy(cmp) to get component from tray
-               3. call vacum(true) to generate special command 
-               4. move to cmp position
-               5. call vacum(false) to generate special command
-            */
-            for (var elemValue in this.components.forTrays) {
-               var evalue = this.components.forTrays[ elemValue ];
-               for (var cmpName in evalue ) {
-                  if($.type(evalue[cmpName]) != 'object')
-                     continue; // ignore tray entrys
-
-                  // get cmp from tray
-                  g += this.tapeStrategy( evalue[cmpName], evalue['TRAY'] );
-                  g += this.rotateStrategy( evalue[cmpName] );
-                  g += "G0 X" + evalue[cmpName].x + " Y" + evalue[cmpName].y + "\n";
-                  g += this.putStrategy( evalue[cmpName] );
-               }
-            }
-
-            for (var elemValue in this.components.forPockets ) {
-               var evalue = this.components.forPockets[ elemValue ];
-               for (var cmpName in evalue ) {
-                  if($.type(evalue[cmpName]) != 'object')
-                     continue; // ignore tray entrys
-
-                  g += this.rotateStrategy( evalue[cmpName] );
-                  g += "G0 X" + evalue[cmpName].x + " Y" + evalue[cmpName].y + "\n";
-                  g += this.putStrategy( evalue[cmpName] );
-               }
-            }
-
-            console.log('PNP gcode: ', g);
-
-            return g;
-        },
-        rotateStrategy: function(cmp){
+        exportGcodeDispenserDrop:function(drop, count, PARENT){
             var g = '';
-            // get cmp from tray
-            var rotate = cmp.rot;
-            rotate = parseInt(rotate.replace(/\D+/ig, ''));
-            if(rotate)
-                rotate = rotate / 10;
-            console.log('PNP rotate', rotate);
-            // we choose a stepper with 200 steps for 360°
-            // $103=55.55 ... rotate for 90° = 0.9, rotate for 180° = 1.8
-            g += "(chilipeppr_pause rotate" + " G1 F100 " + this.rotateAxis + rotate + ")\n";
+            var that = this;
+
+            var dropDepth = (that.cannulaDiameter/2).toFixed(4); // got to 1/2 Diameter height, means 1mm drop / Z:0.5mm
+
+            var vector = new THREE.Vector3();
+            vector.setFromMatrixPosition( drop.matrixWorld  );
+
+            g += "(generate Drop Nr: " + count + ")\n";        // Comment to see the blocks
+            g += "G0 F200 Z" + PARENT.clearanceHeight + "\n";         // save height               i.e: Z:1mm
+            g += "G0 X" + (vector.x + that.options.DispenserXoffset).toFixed(4)
+                        + " Y" + (vector.y + that.options.DispenserYoffset).toFixed(4)
+                        + "\n";                                // got to position of drop
+            g += "G0 Z" + dropDepth  + "\n";                   // careful go to dropdepth        i.e: Z:0.05mm
+            g += "(chilipeppr_pause drop" 
+                  + count + " G1 F100 "  
+                  + that.dispenserAxis 
+                  + that.cannulaDiameter 
+                  + ")\n";                                     // Send pause event and wait for second cnc controller
+            g += "G1 F200 Z" + PARENT.clearanceHeight + "\n";          // slow go up to 1mm/3 =    i.e: Z:0.33mm
+
             return g;
         },
-        
-        /**
-         * Strategy in gcode to put a cmp to pcb.
-         */
-        putStrategy: function(cmp){
-           var g = "";
-           g += "(---- put " + cmp.name + " to pcb" + " ----- )\n";
+        exportGcodeDispenser:function(PARENT){
+            var g = '';
+            var that = this;
 
-           g += "G0 Z" + this.holderCoordinates.pcbThick +  "\n"; // move down to pcb surface
-           g += "(chilipeppr_pause vacuum false)\n"; // vacuum off
-           g += "G0 Z" + this.safetyHeight + "\n";
-           
-           return g;
-        },
-        /**
-         * return width and height from cmp.
-         */
-        size: function(cmp){
-            var bbox = this.packagesByName[cmp.pkg].bbox, 
-                dx = 0, 
-                dy = 0;
-            dx = (Math.abs(bbox[0]) + Math.abs(bbox[2]));
-            dy = (Math.abs(bbox[1]) + Math.abs(bbox[3]));
-            return { dx: dx, dy: dy };
-        },
-        // please check this: 
-        // http://www.token.com.tw/chip-resistor/smd-resistor1.htm
-        /**
-         * return gcode to get cmp from pocket.
-         */
-        pocketStrategy: function(cmp, pocketname){
-           var g = "";
-           g += "(---- get " + cmp.name + " from " + pocketname + " ----- )\n";
-           var structure = this.holderCoordinates.structure;
-           var pocket = this.holderCoordinates.pockets[ pocketname ];
-           var size = this.size(cmp);
+            if(! $('#com-chilipeppr-widget-eagle .dispenser-active').is(':checked'))
+               return g;
 
-           g += "G0 Z" + this.safetyHeight + "\n";
-           g += "G0 X" + pocket.x + "Y" + pocket.y + "\n";         // now we moved to zero pint of tray
+            console.group('exportGcodeDispenser');
 
-           g += "G91" + "\n";                                  // set to relative coordination system
-           g += "G0 X"+ (size.dx/2).toFixed(4) + " Y" + (size.dy/2).toFixed(4) + " Z-" + this.safetyHeight + "\n";
-           g += "(chilipeppr_pause vacuum true)\n"; // move to center of cmp
+            g += "(------ DISPENSER DROP's -------)\n";
+            g += "M5 (spindle stop)\n";
 
-           g += "G90" + "\n";                                  // set to relative coordination system
-           g += "G0 Z" + this.safetyHeight + "\n";
-           
-           return g;
-        },
-        // please check this: 
-        // http://www.token.com.tw/chip-resistor/smd-resistor1.htm
-        /**
-         * return gcode to get cmp from tape.
-         */
-        tapeStrategy: function(cmp, trayname){
-           var g = "";
-           g += "(---- get " + cmp.name + " from " + trayname + " ----- )\n";
-           var tray = this.holderCoordinates.trays[ trayname ];
-           var structure = this.holderCoordinates.structure;
-           var dia = this.nozzleDiameter;
-           var nozzlediff = ((structure.holeDiameter/2)-(dia/2));
-           
-           g += "G0 Z" + this.safetyHeight + "\n";
-           g += "G0 X" + tray.x + "Y" + tray.y + "\n";         // now we moved to zero pint of tray
+            // generate gcode for every drop
+            var i = 0;
+            this.renderedDrops.forEach(function(thing) {
+               console.log('Thing', thing);      
+               if(thing.type == 'Object3D'){
+                  thing.children.forEach(function(drop){
+                     g += that.exportGcodeDispenserDrop(drop, ++i, PARENT);
+                  });
+               }
+               else{
+                  g += that.exportGcodeDispenserDrop(thing, ++i, PARENT);
+               }
+            }, this);
 
-           g += "G91" + "\n";                                  // set to relative coordination system
-           g += "G0 X" + structure.holeBorderDistance  + "\n"; // move over the center of first hole
-           g += "G0 Z-" + this.safetyHeight  + "\n";      // go down to zero  z-axis
-           g += "G1 F" + structure.feedrate + "Z" + structure.tapeThick  + "\n";      // go into the hole
-           g += "(nozzleDiameter: " + dia + " holediameter: " + structure.holeDiameter + " nozzlediff: " + nozzlediff +" )\n";
-           g += "G1 F" + structure.feedrate + " Y" + (structure.holeDistance + nozzlediff)  + "\n"; // go up in Y Axis to get next component
-           g += "G0 Z" + this.safetyHeight + "\n";
-           g += "G0 Z-" + this.safetyHeight + " Y-" + (structure.holeComponentDistance.y + nozzlediff) + " X" + structure.holeComponentDistance.x + "\n"; // move to center of cmp
-           g += "(chilipeppr_pause vacuum true)\n"; // move to center of cmp
-
-           g += "G90" + "\n";                                  // set to relative coordination system
-           g += "G0 Z" + this.safetyHeight + "\n";
-           
-           return g;
+            console.log('Dispenser GCODE', g);
+            console.groupEnd('exportGcodeDispenser');
+            return g;
         },
         /**
          * return 3dobject from 3dviewer.
@@ -1068,7 +535,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
             this.obj3dmeta.widget.wakeAnimate();
         },
         sceneRemove: function (obj) {
-            console.log('PNP mySceneGroup', this.mySceneGroup);
+            console.log('DSP mySceneGroup', this.mySceneGroup);
             if (this.mySceneGroup != null){
                 this.mySceneGroup.children.forEach(function(child){
                     child.visible = false; 
@@ -1076,15 +543,6 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
             }
             //this.mySceneGroup.remove(obj);
             this.obj3dmeta.widget.wakeAnimate();
-        },
-        rotateObject: function(object, degrees){
-            var r = (Math.PI / 180) * degrees;
-            var axis = new THREE.Vector3(0, 0, 1);
-            var rotObjectMatrix = new THREE.Matrix4();
-            rotObjectMatrix.makeRotationAxis(axis.normalize(), r);
-            object.matrix.multiply(rotObjectMatrix);
-            object.rotation.setFromRotationMatrix(object.matrix);
-            return object;
         },
         /**
          * User options are available in this property for reference by your
@@ -1126,30 +584,19 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
 
             // init ui 
             var that = this;            
-            this.selectbox('.pnpholders', this.pnpholders);
 
-            // load json definition for holder
-            /*
-            var el = $('#' + that.id);
-            $.getJSON( this.pnpholders[ el.find('.pnpholders').val() ] + ".json?callback=?", function( data ) {
-                console.log('pnp load holderCoordinates', data);
-                that.holderCoordinates = data;                
-            });
-            */
+            // Setup canulla diameter
+            for(var i = 0;i<=9;i++){
+               $('#' + this.id + ' .dropdown-menu a').eq(i).click(that.setCanullaDiameter.bind(this)).prop('href', 'javascript:');
+            }
 
-            this.renderArea = $('#com-chilipeppr-widget-3dviewer-renderArea');
-            this.infoArea = $('.com-chilipeppr-widget-eagle-pickandplace-info-tray');
-            this.infoArea.prependTo(this.renderArea);
-
-            $('#pnp-refresh').click(function(evt){
-               that.setupComponentsTable();
-            });
 
             // register input field 'safetyHeight' to change and options
-            that.reginput('safetyHeight');
-            that.reginput('rotateAxis');
-            that.reginput('nozzleDiameter');
-            that.reginput('packagesTrays');
+            that.reginput('dispenserAxis');
+            that.reginput('cannulaDiameter');
+            that.reginput('startreleaseoffset');
+            that.reginput('DispenserXoffset');
+            that.reginput('DispenserYoffset');
             
             that.reginput();
         },
@@ -1260,36 +707,6 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
             });
 
         },
-        getObjects: function(hash){
-           var ret = {};
-           for(var name in hash){
-              if($.type(hash[name]) == 'object'){
-                ret[name] = hash[name];
-              }
-           }
-           return ret;
-        },
-        hash2array: function(hash){
-            var ret = null;
-            for (var name in hash) {
-                if(ret == null)
-                    ret = [];
-                ret.push(hash[name]);
-            }
-            return ret;
-        },
-        // i.e.: this.searchObj(this.components.forTrays, 'TRAY', 'tray_6')
-        searchObj: function(obj, path, search){
-            var result = null;
-            for (var name in obj) {
-               if(obj[name][path] == search){
-                  if(result == null)
-                     result = [];
-                  result.push(name);
-               }
-            }
-            return result;
-        },
     }
 });
     //]]>
@@ -1299,134 +716,99 @@ cpdefine("inline:com-chilipeppr-widget-eagle-pickandplace", ["chilipeppr_ready",
 
 <body>
 
-   <div id="com-chilipeppr-widget-eagle-pickandplace" class="tab-pane hidden">
-      <div class="panel eagle-advanced" style="margin-bottom:10px;">
-      <!-- PNP Setting -->
-        <div class="btn-group">
-           <button type="button" data-toggle="modal" data-target="#com-chilipeppr-widget-pickandplace-window" class="btn btn-xs btn-default btn-pnp-trays" style="margin: 4px 0;">Configure trays</button> 
-        </div>
+<div id="com-chilipeppr-widget-eagle-dispense" class="tab-pane hidden">
+             <button type="button" class="btn btn-xs btn-default btn-eagle-sendgcodetows" style="margin: 4px 0;">Send Gcode to Workspace</button>
 
-        <div class="form-group">
-            <div class="checkbox">
-              <label><input type="checkbox" class="activepnpgcode" checked>Produce PNP Gcode</label>
-            </div>
-            <div class="checkbox">
-              <label><input type="checkbox" class="onlypnpgcode" xchecked>Only PNP Gcode</label>
-            </div>
+             <div class="panel eagle-advanced" style="margin-bottom:10px;">
+             <!-- Dispense Setting -->
+                 <div class="checkbox">
+                     <label>
+                        <input type="checkbox" class="dispenser-active" xchecked /><h2>Solder Dispenser</h2>
+                     </label>
+                 </div>
+                 <div class="btn-group">
+                     <button type="button" class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown"> <span class="caret"></span></button>
+                     <ul class="dropdown-menu" role="menu">
+                        <!--
+                        Size and product code from ebay offer:
+                        http://www.ebay.de/itm/321327139655
 
-            Rotation axis
-            <div class="input-group">
-                <input class="form-control rotateAxis" type="string" placeholder="" value="Y" />
-            </div>
-            <p class="descriptive-text">The axis for rotate smd cmp on the second controller</p>
+                        TA14	Teliasia	14GA TAPERED TIP	1.55	Olive	1.25	1pc
+                        TA16	Teliasia	16GA TAPERED TIP	1.2	Grey	1.25	1pc
+                        TA18	Teliasia	18GA TAPERED TIP	0.84	Green	1.25	1pc
+                        TA20	Teliasia	20GA TAPERED TIP	0.58	Pink	1.25	1pc
+                        TA22	Teliasia	22GA TAPERED TIP	0.41	Blue	1.25	1pc
+                        TA25	Teliasia	25GA TAPERED TIP	0.26	Red	1.25	1pc
+                        
+                        BL14050	Teliasia	14GA Blunt End Tip 	1.55	2.1	Olive	0.5	1pc
+                        BL15050	Teliasia	15GA Blunt End Tip 	1.36	1.8	Amber	0.5	1pc
+                        BL18050	Teliasia	18GA Blunt End Tip 	0.84	1.27	Green	0.5	1pc
+                        BL20050	Teliasia	20GA Blunt End Tip 	0.6	0.92	Pink	0.5	1pc
+                        BL21050	Teliasia	21GA Blunt End Tip 	0.51	0.82	Purple	0.5	1pc
+                        BL22050	Teliasia	22GA Blunt End Tip 	0.41	0.72	Blue	0.5	1pc
+                        BL23050	Teliasia	23GA Blunt End Tip 	0.34	0.64	Orange	0.5	1pc
+                        BL25050	Teliasia	25GA Blunt End Tip 	0.26	0.52	Red	0.5	1pc
+                        BL27050	Teliasia	27GA Blunt End Tip 	0.21	0.42	Clear	0.5	1pc
+                        -->
 
-            Nozzle outsidediameter
-            <div class="input-group">
-                <input class="form-control nozzleDiameter" type="number" placeholder="" value="1" />
-                <div class="input-group-addon">mm</div>
-            </div>
-            <p class="descriptive-text">The mostly smallest outsidediameter of nozzle</p>
-
-            Safety height
-            <div class="input-group">
-                <input class="form-control safetyHeight" type="number" placeholder="" value="5" />
-                <div class="input-group-addon">mm</div>
-            </div>
-            <p class="descriptive-text">Measure the highest point (Screwheads o.a.) and add one mm to the safety height.</p>
-
-            PNP Holder
-            <div class="input-group">
-               <select class="form-control pnpholders"></select>
-            </div>
-            <p class="descriptive-text">Model of the Pick and Place Holder.</p>
-
-            Packages for Trays
-            <div class="input-group">
-                <input class="form-control packagesTrays" type="string" placeholder="" value="" />
-            </div>
-            <p class="descriptive-text">Comma separated list for possible package names for tray's.</p>
-
-            Packages for Pockets
-            <div class="input-group">
-                <input class="form-control packagesPockets" type="string" placeholder="" value="" />
-            </div>
-            <p class="descriptive-text">Comma separated list for possible package names for pocket's.</p>
-        </div>
-      </div> 
-
-      <!-- Modal -->
-      <div id="com-chilipeppr-widget-pickandplace-window" class="modal fade" role="dialog">
-        <div class="modal-dialog">
-      
-          <!-- Modal content-->
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal">&times;</button>
-              <h4 class="modal-title">Configure component trays.</h4>
-            </div>
-            <div class="modal-body">
-               <div class="panel panel-default">
-                 <!-- Standard-Panel-Inhalt -->
-                 <div class="panel-heading">
-                     Sorted components to tray's and pocket's
-                     <button type="button" id="pnp-refresh" class="btn btn-default">Refresh</button>
+                         <li role="presentation" class="dropdown-header">Color and inside diameter of canullas</li>
+                         <li><a diameter="1.55" href="">Olive  - 1.55 mm</a></li>
+                         <li><a diameter="1.36" href="">Amber  - 1.36 mm</a></li>
+                         <li><a diameter="1.20" href="">Grey   - 1.20 mm</a></li>
+                         <li><a diameter="0.84" href="">Green  - 0.84 mm</a></li>
+                         <li><a diameter="0.60" href="">Pink   - 0.60 mm</a></li>
+                         <li><a diameter="0.51" href="">Purple - 0.51 mm</a></li>
+                         <li><a diameter="0.51" href="">Blue   - 0.41 mm</a></li>
+                         <li><a diameter="0.34" href="">Orange - 0.34 mm</a></li>
+                         <li><a diameter="0.26" href="">Red    - 0.26 mm</a></li>
+                         <li><a diameter="0.21" href="">Clear  - 0.21 mm</a></li>
+                     </ul>&nbsp;Insidediameter of canulla in mm
+                 </div>
+                <div class="input-group">
+                    <input class="form-control cannulaDiameter" type="number" placeholder="Cannula" value="1" xdisabled />
+                    <div class="input-group-addon">mm</div>
                 </div>
-                 <div class="table-responsive">          
-                 <table id="pnp-component-list" class="table">
-                   <thead>
-                     <tr>
-                       <th>Count</th>
-                       <th>Value</th>
-                       <th>Package</th>
-                       <th>Rotate</th>
-                       <th>Names</th>
-                       <th>Tray</th>
-                     </tr>
-                   </thead>
-                   <tbody>
-                   </tbody>
-                 </table>
-               </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            </div>
-          </div>
-      
-        </div>
-      </div>
+                <p class="descriptive-text">
+                  Diameter from Cannula, try first 1mm.
+                </p>
 
-      <!-- Display pocket informations -->
-      <div class="com-chilipeppr-widget-eagle-pickandplace-info-tray panel hidden">
-            <table class="table table-bordered table-striped table-condensed">
-                <tbody>
-                    <tr>
-                        <th colspan="2" class="info-title"></th>
-                    </tr>
-                    <tr class="">
-                        <td>Value</td>
-                        <td class="info-value"></td>
-                    </tr>
-                    <tr class="">
-                        <td class="">Package</td>
-                        <td class="info-package"></td>
-                    </tr>
-                    <tr class="">
-                        <td class="">Names</td>
-                        <td class="info-names"></td>
-                    </tr>
-                    <!--
-                    <tr class="">
-                        <td class="">Vorschau</td>
-                        <td class="info-vorschau"><iframe src="https://3dwarehouse.sketchup.com/embed.html?mid=u1ac1438a-16ce-491b-a128-d039d96cbb5f&width=290&height=163?etp=im" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" width="290" height="163"></iframe></td>
-                    </tr>
-                    -->
-                </tbody>
-            </table>
-      </div>
+                Axis for Dispenser
+                <div class="input-group">
+                    <input class="form-control dispenserAxis" type="string" placeholder="Steps" value="X" xdisabled />
+                </div>
+                <p class="descriptive-text">
+                  Please input the name of the Axis for Dispenser Stepper.<br/>
+                </p>
 
-   </div> 
+                Dispenser Position Offset for X and Y-Axis
+                <div class="input-group">
+                    <div class="input-group-addon">X:</div>
+                    <input class="form-control DispenserXoffset" type="number" placeholder="Offsets" value="0" xdisabled />
+                    <div class="input-group-addon">mm</div>
+                </div>
+                <div class="input-group">
+                    <div class="input-group-addon">Y:</div>
+                    <input class="form-control DispenserYoffset" type="number" placeholder="Offsets" value="0" xdisabled />
+                    <div class="input-group-addon">mm</div>
+                </div>
+
+                <p class="descriptive-text">
+                  The Offset from middle of spindle to the middle of dispenser in mm.
+                </p>
+
+                Start and Release Offset
+                <div class="input-group">
+                    <input class="form-control startreleaseoffset" type="number" placeholder="Steps" value="1" xdisabled />
+                    <div class="input-group-addon">mm</div>
+                </div>
+                <p class="descriptive-text">
+                  Please input the start and release way in mm. After the dispense process, the pivot will release 
+                  the press to prevent flow solder paste after the process. The default are 1mm<br/>
+                </p>
+
+             </div> 
+             <!-- Dispense Setting -->
+</div> 
 
     
 </body>
