@@ -420,10 +420,11 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                         }
                         that.renderedDrops.push(group);
                         if (s.rot != null) {
+                           // TODO: get orignal roatete from eagle.components
                            var rot = parseInt(s.rot.replace(/\D+/,''));
                            var r = (Math.PI / 180) * rot;
                            var axis = new THREE.Vector3(0, 0, 1);
-                           PARENT.rotateAroundObjectAxis(group, axis, r);
+                           // PARENT.rotateAroundObjectAxis(group, axis, r);
                         }
                         that.sceneAdd(group);
                    }  else {
