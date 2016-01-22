@@ -438,7 +438,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
             var g = '';
             var that = this;
 
-            if(! $('#com-chilipeppr-widget-eagle .dispenser-active').is(':checked'))
+            if(! $('#com-chilipeppr-widget-eagle .activedispensegcode').is(':checked'))
                return g;
 
             console.group('exportGcodeDispenser');
