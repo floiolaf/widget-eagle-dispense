@@ -335,9 +335,6 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
             var that = this;
             console.log('renderDispenserDrops: ', PARENT);
 
-            if(! $('#com-chilipeppr-widget-eagle-dispense .dispenser-active').is(':checked'))
-               return;
-            
             $('#' + that.id).find('.cannulaDiameter').trigger('change');
 
             // get all smd pads,
