@@ -178,10 +178,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
          * instantiating code like a workspace or a different widget.
          */
         init: function(eagleWidget) {
-            
-            // if(eagleWidget === undefined)
-            //    return;
-                        
+
             this.eagleWidget = eagleWidget;
             console.log("I am being initted. eagleWidget:", this.eagleWidget);
 
@@ -309,6 +306,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
             else {
                 gcodeParts[1300] = undefined;
             }
+            console.log('Gcode', gcodeParts);
         },
         /**
          * After Render Register all components and sort to the trays and pockets
@@ -340,6 +338,8 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
             if(! $('#com-chilipeppr-widget-eagle-dispense .dispenser-active').is(':checked'))
                return;
             
+            $('#' + that.id).find('.cannulaDiameter').trigger('change');
+
             // get all smd pads,
             var clippers = PARENT.clipperBySignalKey;
             console.group("drawDispenserDrops");
@@ -381,14 +381,16 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                            starty += diameter + space_y;
                         }
                         that.renderedDrops.push(group);
-                        if (s.rot != null) {
-                           // TODO: get orignal roatete from eagle.components
-                           var rot = parseInt(s.rot.replace(/\D+/,''));
-                           var r = (Math.PI / 180) * rot;
-                           var axis = new THREE.Vector3(0, 0, 1);
-                           // PARENT.rotateAroundObjectAxis(group, axis, r);
-                        }
                         that.sceneAdd(group);
+
+                        if (smd.threeObj.userData.elem.rot) {
+                           var rotation = smd.threeObj.userData.elem.rot;
+                           // get orignal roatete from eagle.components
+                           var rot = parseInt(rotation.replace(/\D+/,''));
+                           console.log('Rotation: ', smd.threeObj.userData.elem.name, rot);
+                           var r = (Math.PI / 180) * rot;
+                           // TODO: Don't know how can i rotate a group around it's center???
+                        }
                    }  else {
                      // calculate area and mark drop with traffic colors
                      var ar_smd = s.dx * s.dy;
@@ -422,8 +424,8 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
 
             g += "(generate Drop Nr: " + count + ")\n";        // Comment to see the blocks
             g += "G0 F200 Z" + PARENT.clearanceHeight + "\n";         // save height               i.e: Z:1mm
-            g += "G0 X" + (vector.x + that.options.DispenserXoffset).toFixed(4)
-                        + " Y" + (vector.y + that.options.DispenserYoffset).toFixed(4)
+            g += "G0 X" + (vector.x).toFixed(4)
+                        + " Y" + (vector.y).toFixed(4)
                         + "\n";                                // got to position of drop
             g += "G0 Z" + dropDepth  + "\n";                   // careful go to dropdepth        i.e: Z:0.05mm
             g += "(chilipeppr_pause drop" 
@@ -443,6 +445,8 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                return g;
 
             console.group('exportGcodeDispenser');
+
+            chilipeppr.publish("/com-chilipeppr-elem-flashmsg/flashmsg", "Generate <b>Dispense</b> G-Code", "Rendering Solder paste dispenser g-code moves.", 1 * 1000);
 
             g += "(------ DISPENSER DROP's -------)\n";
             g += "M5 (spindle stop)\n";
