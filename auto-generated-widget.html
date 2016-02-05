@@ -402,18 +402,22 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                         var space_x = (s.dx-(steps_x * diameter)) / steps_x;
                         var space_y = (s.dy-(steps_y * diameter)) / steps_y;
 
-                        var startx = vector.x-(s.dx/2) + radius + (space_x/2);
-                        var starty = vector.y-(s.dy/2) + radius + (space_y/2);
+                        var startx = 0-(s.dx/2) + radius + (space_x/2);
+                        var starty = 0-(s.dy/2) + radius + (space_y/2);
+                        
+                        // First create drops with center from local world (0,0,0)
+                        // then rotate and set the final position of this group
 
                         var group = new THREE.Object3D();//create an empty container
+                        var posy = starty;
                         for(var iy=1; iy <= steps_y; iy++){
+                           var posx = startx;
                            for(var ix=1; ix <= steps_x;ix++){
-                              var drop = PARENT.drawSphere(startx, starty, (that.cannulaDiameter/2), that.colorsDrop[0]);
+                              var drop = PARENT.drawSphere(posx, posy, (that.cannulaDiameter/2), that.colorsDrop[0]);
                               group.add( drop );//add a mesh with geometry to it
-                              startx += diameter + space_x;
+                              posx += diameter + space_x;
                            }
-                           startx = vector.x-(s.dx/2) + radius + (space_x/2);
-                           starty += diameter + space_y;
+                           posy += diameter + space_y;
                         }
                         that.renderedDrops.push(group);
                         that.sceneAdd(group);
@@ -422,10 +426,19 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                            var rotation = smd.threeObj.userData.elem.rot;
                            // get orignal roatete from eagle.components
                            var rot = parseInt(rotation.replace(/\D+/,''));
+                           if(s.rot){
+                              var srot = parseInt(s.rot.replace(/\D+/,''));
+                              rot += srot;
+                           }
                            console.log('Rotation: ', smd.threeObj.userData.elem.name, rot);
                            var r = (Math.PI / 180) * rot;
                            // TODO: Don't know how can i rotate a group around it's center???
+                           group.rotateZ(r);
                         }
+                        var startxGroup = vector.x;//-(s.dx/2) + radius + (space_x/2);
+                        group.position.setX(startxGroup);
+                        var startyGroup = vector.y;//-(s.dy/2) + radius + (space_y/2);
+                        group.position.setY(startyGroup);
                    }  else {
                      // calculate area and mark drop with traffic colors
                      var ar_smd = s.dx * s.dy;
