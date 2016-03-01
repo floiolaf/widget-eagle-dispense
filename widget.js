@@ -189,10 +189,122 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                 this.subscribeToAddGcodeSignal();
                 this.subscribeToBeforeRender();
                 this.injectTab();
+                this.registerEvents();
             });
 
             console.log("I am done being initted.");
         },
+        /**
+         * Register events in 3d space
+         */
+        registerEvents: function(){
+            // $('#com-chilipeppr-widget-3dviewer-renderArea').mouseup(this.onMouseUp.bind(this));
+            var that = this;
+            $('#com-chilipeppr-widget-3dviewer-renderArea').mouseup(function(event){
+               that.onMouseUp(event);
+            });
+        },
+        onMouseUp: function (event) {
+
+            var that = this.eagleWidget;
+
+            if(! this.isTabShowing)
+                return;
+
+
+            // wake animation so we see the results
+            that.obj3dmeta.widget.wakeAnimate();
+
+            var vector = new THREE.Vector3();
+
+            var containerWidth = that.renderArea.innerWidth();
+            var containerHeight = that.renderArea.innerHeight();
+
+            var x = event.clientX;
+            var y = event.clientY;
+            vector.set((event.clientX / containerWidth) * 2 - 1, -(event.clientY / containerHeight) * 2 + 1, 0.5);
+
+            var matrix = new THREE.Matrix4();
+            var matrixInverse = matrix.getInverse(this.obj3dmeta.camera.projectionMatrix);
+            matrix.multiplyMatrices(this.obj3dmeta.camera.matrixWorld, matrixInverse);
+            vector.applyProjection(matrix);
+            vector.sub(this.obj3dmeta.camera.position);
+            vector.normalize();
+            that.raycaster.ray.set(this.obj3dmeta.camera.position, vector);
+
+            var intersects = that.raycaster.intersectObjects(that.intersectObjects, true);
+
+            // reset last object
+            if (that.lastIntersect != null) {
+                // also reset opacity for other items we hilited
+                if (that.lastIntersectOtherMaterials != null) {
+                    that.lastIntersectOtherMaterials.forEach(function(material) {
+                        material.opacity = material.opacityBackup;
+                    });
+                    that.lastIntersectOtherMaterials = [];
+                }
+                that.lastIntersect.object.material.opacity = that.lastIntersect.object.material.opacityBackup;
+            }
+
+            if (intersects.length > 0) {
+                console.log("we got intersection on N objects:", intersects);
+
+                var obj = intersects[0];
+                if (obj != that.lastIntersect) {
+                    that.lastIntersect = obj;
+                    //if ('elemKey' in obj.object.userData) {
+                    console.log("intersect obj:", obj.object.userData);
+                    x += 30;
+                    //y += 30;
+
+                    
+                    var ud = obj.object.userData;
+                    console.log( 'Get Object:', obj );
+                    if(ud.onMouseOverCallback !== undefined && $.type(ud.onMouseOverCallback) == 'function'){
+                        console.log('Found onMouseOverCallback in userData', ud);
+                        ud.x = x; ud.y = y;
+                        return ud.onMouseOverCallback(event, obj);
+                    }
+
+                    if (!('type' in ud)) {
+                        // we found this thru recursion, go to parent
+                        // to get userData
+                        ud = obj.object.parent.userData;
+                    }
+                    
+                    // figure out signal name for this element that was moused over
+                    var signalKey = "";
+                    if (ud.type == "smd") {
+                        signalKey = ud.elem.padSignals[ud.smd.name];
+                    } else if (ud.type == "pad") {
+                        signalKey = ud.elem.padSignals[ud.pad.name];
+                    } else if (ud.type == "via") {
+                        signalKey = ud.name; 
+                    } else if (ud.type == "signal") {
+                        signalKey = ud.name;
+                    } else {
+                        console.error("got ud.type that we did not recognize. ud:", ud);
+                    }
+
+//                     if(this.namedDropGroups[ud.elem.name].visible == true){
+                        this.namedDropGroups[ud.elem.name].forEach(function(group){
+                            group.visible = false;                            
+                        });
+console.log("switch off:", this.namedDropGroups[ud.elem.name]);
+/*                     } else {
+                        this.namedDropGroups[ud.elem.name].visible = true;
+console.log("switch on:", this.namedDropGroups[ud.elem.name]);
+                     }
+*/
+                     this.obj3dmeta.widget.wakeAnimate();
+
+                }
+            } else {
+                // hide info area
+                console.log('Hide info area ...');
+            }
+        },
+
         /**
          * Inject the solder mask tab into the Eagle Brd Widget
          */
@@ -331,6 +443,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
             $('#com-chilipeppr-widget-eagle-dispense').find('.cannulaDiameter').val(diameter);
             $('#com-chilipeppr-widget-eagle-dispense').find('.cannulaDiameter').trigger('change');
         },
+        namedDropGroups: {},
         renderDispenserDrops:function(PARENT){
             var that = this;
             console.log('renderDispenserDrops: ', PARENT);
@@ -340,7 +453,14 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
             // get all smd pads,
             var clippers = PARENT.clipperBySignalKey;
             console.group("drawDispenserDrops");
+            
+            var elementName = '';
             for ( var keyname in clippers ){
+               if($.type(clippers[keyname].smds) != 'array')
+                    clippers[keyname].smds = [];
+
+               var elementGroup = new THREE.Object3D();
+
                clippers[keyname].smds.forEach(function(smd){
                   // get absolute position'
                   var vector = new THREE.Vector3();
@@ -349,6 +469,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                   var diameter = that.cannulaDiameter+(that.cannulaDiameter/2);
                   var radius = diameter / 2;
                   var ar_drop = Math.PI * (radius*radius);
+                  var group = new THREE.Object3D();//create an empty container
                   
                    // Calculate bigger smd pads as canulla diameter*2
                    // +-----+
@@ -370,7 +491,6 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                         // First create drops with center from local world (0,0,0)
                         // then rotate and set the final position of this group
 
-                        var group = new THREE.Object3D();//create an empty container
                         var posy = starty;
                         for(var iy=1; iy <= steps_y; iy++){
                            var posx = startx;
@@ -381,8 +501,6 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                            }
                            posy += diameter + space_y;
                         }
-                        that.renderedDrops.push(group);
-                        that.sceneAdd(group);
 
                         if (smd.threeObj.userData.elem.rot) {
                            var rotation = smd.threeObj.userData.elem.rot;
@@ -414,11 +532,23 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                         color = that.colorsDrop[2];
                      // draw a drop (cone) on this position
                      var drop = PARENT.drawSphere(vector.x, vector.y, (that.cannulaDiameter/2), color);
-                     that.sceneAdd(drop);
-                     that.renderedDrops.push(drop);
+                     group.add( drop );//add a mesh with geometry to it
                   }
+
+                  that.sceneAdd(group);
+                  that.renderedDrops.push(group);
+
+                  elementName = smd.threeObj.userData.elem.name
+                  if($.type(that.namedDropGroups[elementName]) != 'array')
+                    that.namedDropGroups[elementName] = [];
+                  that.namedDropGroups[elementName].push(group);
                });
             }
+
+
+
+console.log(that.namedDropGroups);
+
             console.groupEnd("drawDispenserDrops");
 
             // finish
