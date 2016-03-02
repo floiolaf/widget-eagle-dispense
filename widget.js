@@ -441,12 +441,20 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
             
             var elementName = '';
             for ( var keyname in clippers ){
+
                if($.type(clippers[keyname].smds) != 'array')
                     clippers[keyname].smds = [];
 
                var elementGroup = new THREE.Object3D();
 
                clippers[keyname].smds.forEach(function(smd){
+
+                    elementName = smd.threeObj.userData.elem.name
+                    // ignore this element if exists and not visible
+                    if(that.namedDropGroups[elementName] !== undefined && that.namedDropGroups[elementName].length > 0 && that.namedDropGroups[elementName][0].visible == false)
+                        return;
+
+
                   // get absolute position'
                   var vector = new THREE.Vector3();
                   vector.setFromMatrixPosition( smd.threeObj.matrixWorld );
@@ -523,7 +531,6 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                   that.sceneAdd(group);
                   that.renderedDrops.push(group);
 
-                  elementName = smd.threeObj.userData.elem.name
                   if($.type(that.namedDropGroups[elementName]) != 'array')
                     that.namedDropGroups[elementName] = [];
                   that.namedDropGroups[elementName].push(group);
@@ -579,14 +586,16 @@ console.log(that.namedDropGroups);
             // generate gcode for every drop
             var i = 0;
             this.renderedDrops.forEach(function(thing) {
-               console.log('Thing', thing);      
-               if(thing.type == 'Object3D'){
-                  thing.children.forEach(function(drop){
-                     g += that.exportGcodeDispenserDrop(drop, ++i, PARENT);
-                  });
-               }
-               else{
-                  g += that.exportGcodeDispenserDrop(thing, ++i, PARENT);
+               console.log('Thing', thing);  
+               if( thing.visible ){
+                   if(thing.type == 'Object3D'){
+                      thing.children.forEach(function(drop){
+                         g += that.exportGcodeDispenserDrop(drop, ++i, PARENT);
+                      });
+                   }
+                   else{
+                      g += that.exportGcodeDispenserDrop(thing, ++i, PARENT);
+                   }
                }
             }, this);
 
