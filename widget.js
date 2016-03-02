@@ -200,7 +200,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
         registerEvents: function(){
             // $('#com-chilipeppr-widget-3dviewer-renderArea').mouseup(this.onMouseUp.bind(this));
             var that = this;
-            $('#com-chilipeppr-widget-3dviewer-renderArea').mouseup(function(event){
+            $('#com-chilipeppr-widget-3dviewer-renderArea canvas').unbind('mouseup').mouseup(function(event){
                that.onMouseUp(event);
             });
         },
@@ -209,7 +209,10 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
             var that = this.eagleWidget;
 
             if(! this.isTabShowing)
-                return;
+                return; // only if plugin active
+
+            if(event.which != 1)
+                return; // only left mouse button
 
 
             // wake animation so we see the results
@@ -272,32 +275,14 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                         ud = obj.object.parent.userData;
                     }
                     
-                    // figure out signal name for this element that was moused over
-                    var signalKey = "";
-                    if (ud.type == "smd") {
-                        signalKey = ud.elem.padSignals[ud.smd.name];
-                    } else if (ud.type == "pad") {
-                        signalKey = ud.elem.padSignals[ud.pad.name];
-                    } else if (ud.type == "via") {
-                        signalKey = ud.name; 
-                    } else if (ud.type == "signal") {
-                        signalKey = ud.name;
-                    } else {
-                        console.error("got ud.type that we did not recognize. ud:", ud);
-                    }
 
-//                     if(this.namedDropGroups[ud.elem.name].visible == true){
+                    // Switch dispense for pad on or off
+                    if (ud.type == "smd" || ud.type == "pad") {
                         this.namedDropGroups[ud.elem.name].forEach(function(group){
-                            group.visible = false;                            
+                            group.visible = (group.visible == true ? false : true);                            
                         });
-console.log("switch off:", this.namedDropGroups[ud.elem.name]);
-/*                     } else {
-                        this.namedDropGroups[ud.elem.name].visible = true;
-console.log("switch on:", this.namedDropGroups[ud.elem.name]);
-                     }
-*/
-                     this.obj3dmeta.widget.wakeAnimate();
-
+                        this.obj3dmeta.widget.wakeAnimate();
+                    }
                 }
             } else {
                 // hide info area
