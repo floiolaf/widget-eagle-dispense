@@ -212,7 +212,7 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                 return; // only if plugin active
 
             if(event.which != 1)
-                return; // only left mouse button
+                return; // only left mouse button ..
 
 
             // wake animation so we see the results
