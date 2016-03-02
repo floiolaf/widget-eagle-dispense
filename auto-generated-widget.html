@@ -315,6 +315,8 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                     
 
                     // Switch dispense for pad on or off
+                    // TODO: Maybe we mark this in an extra hash
+                    //        this.displayDrops['LED1'] = true // false
                     if (ud.type == "smd" || ud.type == "pad") {
                         this.namedDropGroups[ud.elem.name].forEach(function(group){
                             group.visible = (group.visible == true ? false : true);                            
