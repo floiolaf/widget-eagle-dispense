@@ -282,6 +282,10 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
                     if (ud.type == "smd" || ud.type == "pad") {
                         this.namedDropGroups[ud.elem.name].forEach(function(group){
                             group.visible = (group.visible == true ? false : true);                            
+                            if(group.visible)
+                                group.userData.display = true;
+                            else 
+                                group.userData.display = false;
                         });
                         this.obj3dmeta.widget.wakeAnimate();
                     }
@@ -340,6 +344,8 @@ cpdefine("inline:com-chilipeppr-widget-eagle-dispense", ["chilipeppr_ready", /* 
             this.isTabShowing = true;
             if (this.mySceneGroup != null){
                 this.mySceneGroup.children.forEach(function(child){
+                    if(child.userData.display !== undefined && child.userData.display == false)
+                        return;
                     child.visible = true; 
                 });
             } else {
