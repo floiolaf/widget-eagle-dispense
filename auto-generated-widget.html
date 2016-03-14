@@ -628,6 +628,8 @@ console.log(that.namedDropGroups);
 
             g += "(------ DISPENSER DROP's -------)\n";
             g += "M5 (spindle stop)\n";
+            if(this.options.DispenserXoffset !== undefined)
+                g += "G92 X" + this.options.DispenserXoffset + " Y" + this.options.DispenserYoffset + "\n"; 
 
             // generate gcode for every drop
             var i = 0;
